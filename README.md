@@ -38,7 +38,7 @@ Supports **Chrome / Chromium** (Manifest V3) and **Firefox / Waterfox** (Manifes
 
 ## Installation
 
-### From the browser store *(coming soon)*
+### From the browser store
 
 - Chrome Web Store — search *Autodarts Camera Settings*
 - Firefox Add-ons (AMO) — search *Autodarts Camera Settings*
@@ -47,7 +47,7 @@ Supports **Chrome / Chromium** (Manifest V3) and **Firefox / Waterfox** (Manifes
 
 1. Clone the repo and build:
    ```bash
-   git clone https://github.com/your-org/browser-extension-autodarts-camera-settings
+   git clone https://github.com/vllni/browser-extension-autodarts-camera-settings
    cd browser-extension-autodarts-camera-settings
    npm install
    bash build.sh
