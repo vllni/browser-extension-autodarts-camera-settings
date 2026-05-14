@@ -14,7 +14,6 @@ Browser extension that injects V4L2 camera control panels into the Autodarts boa
 | `src/manifest.firefox.json` | Firefox MV2 manifest (gecko ID + `browser_specific_settings`) |
 | `build.sh` | Builds `dist/chrome/` and `dist/firefox/` and zips both |
 | `tests/content.test.js` | Jest + jsdom tests for the content script |
-| `AUTODARTS_LOCAL_API.md` | Reverse-engineered local board API reference |
 
 ## Build & Test
 

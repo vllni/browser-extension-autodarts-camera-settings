@@ -92,12 +92,11 @@ src/
 tests/
   content.test.js       # Jest + jsdom tests
 build.sh                # build script
-AUTODARTS_LOCAL_API.md  # reverse-engineered board API reference
 ```
 
 ### Board API
 
-The extension talks to the Autodarts board's local REST API — see [`AUTODARTS_LOCAL_API.md`](AUTODARTS_LOCAL_API.md) for the full reference. The three endpoints used are:
+The extension talks to the Autodarts board's local REST API — The three endpoints used are:
 
 | Method | Path | Purpose |
 |--------|------|---------|
