@@ -189,12 +189,18 @@
   /* ─── Open panel ──────────────────────────────────────────────────── */
 
   let activePanelCam = null; // index of the cam whose panel is open
+  let hiddenCalibrationEls = []; // calibration SVGs hidden while the panel is open
 
   function closePanel() {
     const existing = document.getElementById('adcs-panel');
     if (existing) existing.remove();
     const overlay = document.getElementById('adcs-overlay');
     if (overlay) overlay.remove();
+    // Restore calibration overlays
+    for (const { el, display } of hiddenCalibrationEls) {
+      el.style.display = display;
+    }
+    hiddenCalibrationEls = [];
     activePanelCam = null;
   }
 
@@ -266,6 +272,12 @@
     panel.appendChild(footer);
 
     document.body.appendChild(panel);
+
+    // Hide the calibration SVG overlay while the settings panel is open
+    for (const svgEl of anchorEl.querySelectorAll('svg')) {
+      hiddenCalibrationEls.push({ el: svgEl, display: svgEl.style.display });
+      svgEl.style.display = 'none';
+    }
 
     // Position panel near the anchor image
     positionPanel(panel, anchorEl);
