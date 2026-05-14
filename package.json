@@ -1,0 +1,23 @@
+{
+  "name": "autodarts-camera-settings",
+  "version": "1.0.0",
+  "description": "Browser extension that adds V4L2 camera control sliders to the Autodarts board config page.",
+  "license": "MIT",
+  "scripts": {
+    "build": "bash build.sh",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "jest-environment-jsdom",
+    "testEnvironmentOptions": {
+      "url": "http://192.168.178.46:3180/config"
+    },
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  }
+}

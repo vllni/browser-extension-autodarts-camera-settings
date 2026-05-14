@@ -1,0 +1,20 @@
+# Build output
+dist/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# playwright
+.playwright-mcp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Web-ext artifacts
+web-ext-artifacts/

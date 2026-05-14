@@ -1,0 +1,421 @@
+/*
+ * Autodarts Camera Settings – content styles
+ *
+ * Design tokens extracted from the Autodarts board SPA (Chakra UI dark theme):
+ *   bg body:          #1a202c  (rgb 26, 32, 44)
+ *   bg surface:       rgba(255,255,255,0.08)
+ *   bg surface hover: rgba(255,255,255,0.12)
+ *   text primary:     rgba(255,255,255,0.92)
+ *   text muted:       rgba(255,255,255,0.48)
+ *   border:           rgba(255,255,255,0.16)
+ *   accent green:     rgb(154,230,180)  / rgba(154,230,180,0.16) bg
+ *   border-radius:    6px
+ *   font:             -apple-system, BlinkMacSystemFont, "Segoe UI", …
+ */
+
+/* ── Extension active indicator ──────────────────────────────────── */
+
+/* ── Full camera card (image + controls row) ─────────────────────── */
+
+.adcs-cam-card {
+  cursor: pointer;
+  border-radius: 4px;
+  transition: outline-color 0.15s ease;
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+}
+
+.adcs-cam-card:hover {
+  outline-color: rgba(154, 230, 180, 0.45);
+}
+
+.adcs-cam-card img {
+  transition: brightness 0.15s ease;
+}
+
+.adcs-cam-card:hover img {
+  filter: brightness(1.12);
+}
+
+/* ── Small badge pinned to the top-right of the image ────────────── */
+
+.adcs-cam-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 32, 44, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 16px;
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+
+.adcs-cam-card:hover .adcs-cam-badge {
+  opacity: 1;
+  transform: scale(1);
+}
+
+
+/* ── Overlay (click-catcher, no visual dimming) ─────────────────── */
+
+#adcs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
+/* ── Panel container ─────────────────────────────────────────────── */
+
+#adcs-panel {
+  position: absolute;
+  z-index: 9999;
+  width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: #1e2533;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+/* ── Panel header ─────────────────────────────────────────────────── */
+
+.adcs-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+}
+
+.adcs-panel-title {
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.adcs-panel-title .mdi {
+  font-size: 18px;
+  color: rgb(154, 230, 180);
+}
+
+/* ── Panel body (scrollable) ─────────────────────────────────────── */
+
+.adcs-panel-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.adcs-panel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.adcs-panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.adcs-panel-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 3px;
+}
+
+/* ── Panel footer ─────────────────────────────────────────────────── */
+
+.adcs-panel-footer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+
+.adcs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+
+.adcs-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.adcs-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.adcs-btn .mdi {
+  font-size: 16px;
+}
+
+.adcs-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.adcs-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* ── Control rows ─────────────────────────────────────────────────── */
+
+.adcs-control-row {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.adcs-control-row:last-child {
+  border-bottom: none;
+}
+
+.adcs-control-row.adcs-inactive {
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.adcs-control-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.56);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.adcs-input-wrap {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Slider row ──────────────────────────────────────────────────── */
+
+.adcs-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.adcs-range {
+  flex: 1 1 auto;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.16);
+  outline: none;
+  cursor: pointer;
+}
+
+.adcs-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgb(154, 230, 180);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.adcs-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgb(154, 230, 180);
+  border: none;
+  cursor: pointer;
+}
+
+.adcs-range:focus::-webkit-slider-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 3px rgba(154, 230, 180, 0.28);
+}
+
+.adcs-number {
+  width: 64px;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.adcs-number::-webkit-inner-spin-button,
+.adcs-number::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.adcs-number:focus {
+  outline: none;
+  border-color: rgb(154, 230, 180);
+}
+
+.adcs-number:disabled {
+  opacity: 0.4;
+}
+
+/* ── Select / menu ───────────────────────────────────────────────── */
+
+.adcs-select {
+  flex: 1 1 auto;
+  padding: 5px 32px 5px 10px;
+  background: rgba(0, 0, 0, 0) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='rgba(255,255,255,0.56)' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 10px center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.adcs-select:focus {
+  outline: none;
+  border-color: rgb(154, 230, 180);
+}
+
+.adcs-select option {
+  background: #1e2533;
+}
+
+/* ── Toggle switch ───────────────────────────────────────────────── */
+
+.adcs-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  width: 40px;
+  height: 22px;
+}
+
+.adcs-toggle input[type="checkbox"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.adcs-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 22px;
+  transition: background 0.2s ease;
+}
+
+.adcs-toggle-slider::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.70);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.adcs-toggle input:checked+.adcs-toggle-slider {
+  background: rgba(154, 230, 180, 0.40);
+}
+
+.adcs-toggle input:checked+.adcs-toggle-slider::before {
+  transform: translateX(18px);
+  background: rgb(154, 230, 180);
+}
+
+.adcs-toggle input:focus-visible+.adcs-toggle-slider {
+  outline: 2px solid rgb(154, 230, 180);
+  outline-offset: 2px;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────── */
+
+.adcs-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 0;
+  color: rgba(255, 255, 255, 0.40);
+  font-size: 32px;
+}
+
+/* ── Error ───────────────────────────────────────────────────────── */
+
+.adcs-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+  color: rgb(252, 129, 129);
+  font-size: 13px;
+}
+
+.adcs-error .mdi {
+  font-size: 20px;
+  flex-shrink: 0;
+}

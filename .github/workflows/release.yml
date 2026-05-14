@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+# Required repository secrets:
+#
+#   CHROME_EXTENSION_ID      – The extension's Chrome Web Store ID
+#   CHROME_CLIENT_ID         – OAuth2 client ID (Google API Console)
+#   CHROME_CLIENT_SECRET     – OAuth2 client secret
+#   CHROME_REFRESH_TOKEN     – OAuth2 refresh token (from chrome-webstore-upload auth flow)
+#
+#   FIREFOX_API_KEY          – AMO JWT issuer  (from addons.mozilla.org → User → API credentials)
+#   FIREFOX_API_SECRET       – AMO JWT secret
+
+jobs:
+  # ── 1. Build ───────────────────────────────────────────────────────────────
+  build:
+    name: Build extension packages
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --ci
+
+      - name: Extract version from tag
+        id: version
+        # Strip the leading "v" from the tag name (e.g. v1.2.3 → 1.2.3)
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp version into manifests
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          node -e "
+            const fs = require('fs');
+            ['src/manifest.chrome.json', 'src/manifest.firefox.json'].forEach(f => {
+              const m = JSON.parse(fs.readFileSync(f, 'utf8'));
+              m.version = '${VERSION}';
+              fs.writeFileSync(f, JSON.stringify(m, null, 2) + '\n');
+            });
+          "
+
+      - name: Build
+        run: bash build.sh
+
+      - name: Upload Chrome zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-zip
+          path: dist/autodarts-camera-settings-chrome.zip
+
+      - name: Upload Firefox zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-zip
+          path: dist/autodarts-camera-settings-firefox.zip
+
+  # ── 2. Attach zips to the GitHub Release ──────────────────────────────────
+  attach-to-release:
+    name: Attach packages to GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Chrome zip
+        uses: actions/download-artifact@v4
+        with:
+          name: chrome-zip
+
+      - name: Download Firefox zip
+        uses: actions/download-artifact@v4
+        with:
+          name: firefox-zip
+
+      - name: Upload assets to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            autodarts-camera-settings-chrome.zip
+            autodarts-camera-settings-firefox.zip
+
+  # ── 3. Publish to Chrome Web Store ────────────────────────────────────────
+  publish-chrome:
+    name: Publish to Chrome Web Store
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Chrome zip
+        uses: actions/download-artifact@v4
+        with:
+          name: chrome-zip
+
+      - name: Upload & publish to Chrome Web Store
+        run: |
+          npx --yes chrome-webstore-upload-cli@3 upload \
+            --source autodarts-camera-settings-chrome.zip \
+            --extension-id "${{ secrets.CHROME_EXTENSION_ID }}" \
+            --client-id "${{ secrets.CHROME_CLIENT_ID }}" \
+            --client-secret "${{ secrets.CHROME_CLIENT_SECRET }}" \
+            --refresh-token "${{ secrets.CHROME_REFRESH_TOKEN }}" \
+            --auto-publish
+
+  # ── 4. Publish to Firefox Add-ons (AMO) ───────────────────────────────────
+  publish-firefox:
+    name: Publish to Firefox Add-ons
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Firefox zip
+        uses: actions/download-artifact@v4
+        with:
+          name: firefox-zip
+
+      - name: Unpack Firefox extension
+        run: |
+          mkdir -p firefox-unpacked
+          unzip autodarts-camera-settings-firefox.zip -d firefox-unpacked
+
+      - name: Sign & submit to AMO
+        run: |
+          npx --yes web-ext@8 sign \
+            --source-dir firefox-unpacked \
+            --channel listed \
+            --api-key "${{ secrets.FIREFOX_API_KEY }}" \
+            --api-secret "${{ secrets.FIREFOX_API_SECRET }}" \
+            --artifacts-dir web-ext-artifacts
