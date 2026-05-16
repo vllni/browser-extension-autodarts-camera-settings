@@ -75,6 +75,7 @@
   function buildControlRow(key, ctrl, camIndex, onChangeCallback) {
     const row = document.createElement('div');
     row.className = 'adcs-control-row';
+    row.dataset.adcsKey = key;
     if (ctrl.isInactive) row.classList.add('adcs-inactive');
 
     const labelEl = document.createElement('label');
@@ -311,9 +312,26 @@
       return aOrder - bOrder || a.name.localeCompare(b.name);
     });
 
+    async function refreshDisabledStates() {
+      let freshControls;
+      try { freshControls = await fetchControls(camIndex); } catch { return; }
+      for (const [k, ctrl] of Object.entries(freshControls)) {
+        const row = body.querySelector(`[data-adcs-key="${k}"]`);
+        if (!row) continue;
+        row.classList.toggle('adcs-inactive', !!ctrl.isInactive);
+        for (const inp of row.querySelectorAll('input, select')) {
+          inp.disabled = !!ctrl.isInactive;
+        }
+      }
+    }
+
     for (const [key, ctrl] of sorted) {
       const row = buildControlRow(key, ctrl, camIndex, (k, v) => {
         liveValues[k] = v;
+        // Re-fetch disabled states when a toggle or menu changes (may affect other controls)
+        if (controls[k] && controls[k].type !== 0) {
+          refreshDisabledStates();
+        }
       });
       body.appendChild(row);
     }
