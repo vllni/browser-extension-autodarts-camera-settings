@@ -138,11 +138,11 @@ jobs:
           mkdir -p firefox-unpacked
           unzip autodarts-camera-settings-firefox.zip -d firefox-unpacked
 
-      - name: Sign & submit to AMO
+      - name: Submit to AMO for review
         run: |
           npx --yes web-ext@8 sign \
             --source-dir firefox-unpacked \
             --channel listed \
+            --use-submission-api \
             --api-key "${{ secrets.FIREFOX_API_KEY }}" \
-            --api-secret "${{ secrets.FIREFOX_API_SECRET }}" \
-            --artifacts-dir web-ext-artifacts
+            --api-secret "${{ secrets.FIREFOX_API_SECRET }}"
