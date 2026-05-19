@@ -1,6 +1,6 @@
 {
   "name": "autodarts-camera-settings",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Browser extension that adds V4L2 camera control sliders to the Autodarts board config page.",
   "license": "MIT",
   "scripts": {
