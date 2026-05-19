@@ -143,6 +143,6 @@ jobs:
           npx --yes web-ext@8 sign \
             --source-dir firefox-unpacked \
             --channel listed \
-            --use-submission-api \
+            --approval-timeout 0 \
             --api-key "${{ secrets.FIREFOX_API_KEY }}" \
             --api-secret "${{ secrets.FIREFOX_API_SECRET }}"
