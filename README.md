@@ -94,6 +94,50 @@ tests/
 build.sh                # build script
 ```
 
+### CI/CD secrets
+
+The release workflow requires five repository secrets (**Settings → Secrets and variables → Actions**).
+
+#### Chrome Web Store
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → create a project → **APIs & Services → Enable APIs** → enable **Chrome Web Store API**
+2. **APIs & Services → Credentials → Create Credentials → OAuth client ID** → type **Desktop app** → copy **Client ID** and **Client Secret**
+3. Open this URL in your browser (replace `CLIENT_ID`):
+   ```
+   https://accounts.google.com/o/oauth2/auth?client_id=CLIENT_ID&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=https://www.googleapis.com/auth/chromewebstore
+   ```
+4. Exchange the code for a refresh token:
+   ```bash
+   curl -X POST https://oauth2.googleapis.com/token \
+     -d client_id=CLIENT_ID \
+     -d client_secret=CLIENT_SECRET \
+     -d code=AUTH_CODE \
+     -d grant_type=authorization_code \
+     -d redirect_uri=urn:ietf:wg:oauth:2.0:oob
+   ```
+   Copy `refresh_token` from the response.
+5. The extension ID appears in the Chrome Web Store dashboard URL after the first manual upload.
+
+| Secret | Where to find it |
+|--------|-----------------|
+| `CHROME_EXTENSION_ID` | Chrome Web Store developer dashboard |
+| `CHROME_CLIENT_ID` | Google Cloud Console → OAuth client |
+| `CHROME_CLIENT_SECRET` | Google Cloud Console → OAuth client |
+| `CHROME_REFRESH_TOKEN` | `refresh_token` field from step 4 |
+
+#### Firefox Add-ons (AMO)
+
+1. Log in at [addons.mozilla.org](https://addons.mozilla.org) with the account used to submit the extension
+2. Go to **https://addons.mozilla.org/en-US/developers/addon/api/key/**
+3. Click **Generate new credentials**
+
+| Secret | AMO field |
+|--------|-----------|
+| `FIREFOX_API_KEY` | JWT issuer |
+| `FIREFOX_API_SECRET` | JWT secret |
+
+---
+
 ### Board API
 
 The extension talks to the Autodarts board's local REST API — The three endpoints used are:
