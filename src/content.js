@@ -432,34 +432,55 @@
     });
   }
 
-  /* ─── MutationObserver to handle SPA navigation ──────────────────── */
+  /* ─── SPA-navigation aware startup ───────────────────────────────── */
 
-  function init() {
-    injectMDI();
+  let _lastPath = location.pathname;
 
-    // React SPA renders images async; poll until found, then rely on observer
-    let pollCount = 0;
-    function tryInject() {
+  /** Called whenever the URL is (or becomes) /config, or when we leave it. */
+  function onUrlChange() {
+    if (location.pathname === '/config') {
+      injectMDI();
       injectOnCamImages();
-      const found = document.querySelectorAll('img[src*="/api/streams/cams/"]').length;
-      if (found === 0 && pollCount < 20) {
-        pollCount++;
-        setTimeout(tryInject, 500);
-      }
+    } else {
+      closePanel();
     }
-    tryInject();
-
-    // Also watch for DOM changes (covers React re-renders after initial mount)
-    const observer = new MutationObserver(() => {
-      injectOnCamImages();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
   }
 
-  // Run after the SPA has mounted (the page loads content dynamically)
+  // Single persistent MutationObserver — catches React's async rendering of
+  // camera images after every SPA navigation to /config.
+  const _observer = new MutationObserver(() => {
+    if (location.pathname === '/config') {
+      injectOnCamImages();
+    }
+  });
+
+  function start() {
+    _observer.observe(document.body, { childList: true, subtree: true });
+
+    // history.pushState cannot be intercepted from a content script's isolated
+    // world, so we poll location.pathname to reliably detect SPA route changes.
+    setInterval(() => {
+      const path = location.pathname;
+      if (path !== _lastPath) {
+        _lastPath = path;
+        onUrlChange();
+      }
+    }, 250);
+
+    // popstate fires for back/forward navigation and is accessible from the
+    // isolated world.
+    window.addEventListener('popstate', () => {
+      _lastPath = location.pathname;
+      onUrlChange();
+    });
+
+    // Initial check
+    onUrlChange();
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', start);
   } else {
-    init();
+    start();
   }
 })();
