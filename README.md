@@ -102,20 +102,7 @@ The release workflow requires five repository secrets (**Settings → Secrets an
 
 1. [console.cloud.google.com](https://console.cloud.google.com) → create a project → **APIs & Services → Enable APIs** → enable **Chrome Web Store API**
 2. **APIs & Services → Credentials → Create Credentials → OAuth client ID** → type **Desktop app** → copy **Client ID** and **Client Secret**
-3. Open this URL in your browser (replace `CLIENT_ID`):
-   ```
-   https://accounts.google.com/o/oauth2/auth?client_id=CLIENT_ID&redirect_uri=urn:ietf:wg:oauth:2.0:oob&response_type=code&scope=https://www.googleapis.com/auth/chromewebstore
-   ```
-4. Exchange the code for a refresh token:
-   ```bash
-   curl -X POST https://oauth2.googleapis.com/token \
-     -d client_id=CLIENT_ID \
-     -d client_secret=CLIENT_SECRET \
-     -d code=AUTH_CODE \
-     -d grant_type=authorization_code \
-     -d redirect_uri=urn:ietf:wg:oauth:2.0:oob
-   ```
-   Copy `refresh_token` from the response.
+3. run `npx chrome-webstore-upload-keys`
 5. The extension ID appears in the Chrome Web Store dashboard URL after the first manual upload.
 
 | Secret | Where to find it |
