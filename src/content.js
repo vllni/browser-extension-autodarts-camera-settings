@@ -448,14 +448,27 @@
 
   // Single persistent MutationObserver — catches React's async rendering of
   // camera images after every SPA navigation to /config.
+  // We also observe `src` attribute changes: React often inserts <img> elements
+  // first and sets their src asynchronously, so childList alone isn't enough.
+  let _injectTimer = null;
+  function scheduleInject() {
+    if (_injectTimer) clearTimeout(_injectTimer);
+    _injectTimer = setTimeout(injectOnCamImages, 80);
+  }
+
   const _observer = new MutationObserver(() => {
     if (location.pathname === '/config') {
-      injectOnCamImages();
+      scheduleInject();
     }
   });
 
   function start() {
-    _observer.observe(document.body, { childList: true, subtree: true });
+    _observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['src'],
+    });
 
     // history.pushState cannot be intercepted from a content script's isolated
     // world, so we poll location.pathname to reliably detect SPA route changes.

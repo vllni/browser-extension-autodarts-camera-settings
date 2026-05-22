@@ -54,15 +54,8 @@
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.70);
   font-size: 16px;
-  opacity: 0;
-  transform: scale(0.88);
-  transition: opacity 0.15s ease, transform 0.15s ease;
-  pointer-events: none;
-}
-
-.adcs-cam-card:hover .adcs-cam-badge {
   opacity: 1;
-  transform: scale(1);
+  pointer-events: none;
 }
 
 
