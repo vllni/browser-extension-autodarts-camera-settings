@@ -7,7 +7,9 @@
  * A "Reset to opened state" button restores the snapshot taken when
  * the panel was first opened.
  *
- * API used (all relative to the board origin):
+ * API used (see resolveApiBase for how the base URL is derived — directly on a
+ * locally-served board, or via the per-board autodarts.direct relay host when
+ * running inside the play.autodarts.io embedded client):
  *   GET  /api/cams/controls/{cam}        – fetch controls
  *   PATCH /api/cams/controls/{cam}       – update a single control value
  *   POST  /api/cams/controls/{cam}/reset – reset all controls to device defaults
@@ -30,19 +32,82 @@
 
   /* ─── Utility ─────────────────────────────────────────────────────── */
 
-  /** Derive the board base URL from the current page URL */
-  function boardBase() {
+  /**
+   * Resolve the base URL of the board's REST API.
+   *
+   * The camera API lives on the board, which is NOT always the origin serving
+   * the current page:
+   *
+   * • Direct connection (http://<ip>:3180/config, or the board's relay host
+   *   directly): the API is on the current page origin.
+   * • Embedded client on play.autodarts.io (…/boards/<id>/config): the page
+   *   origin is the cloud host, which does NOT serve the camera API (→ 404). The
+   *   board is reached through its per-board relay host
+   *   `https://<ip-with-dashes>.<board-id>.autodarts.direct:<tlsPort>`.
+   *
+   * In every case the camera stream <img> on the page already points at the
+   * board (its src is `<base>/api/streams/cams/<n>`), so we derive the base from
+   * the image's origin. Images load without a CORS check, so this works even on
+   * the cloud client — unlike a `fetch` to the discovery service, which a
+   * content script can't reliably make cross-origin. Falls back to the page
+   * origin when no stream image is present.
+   */
+  function resolveApiBase() {
+    const img = document.querySelector('img[src*="/api/streams/cams/"]');
+    if (img && img.src) {
+      try {
+        return new URL(img.src, location.href).origin;
+      } catch {
+        /* fall through to page origin */
+      }
+    }
     return `${location.protocol}//${location.host}`;
   }
 
+  const ext = (typeof browser !== 'undefined') ? browser
+    : (typeof chrome !== 'undefined' ? chrome : null);
+
+  /**
+   * Fetch a board API URL, transparently routing cross-origin requests through
+   * the background script.
+   *
+   * On play.autodarts.io the board is reached via its relay host
+   * (…autodarts.direct), whose /api/cams/* responses have NO
+   * Access-Control-Allow-Origin header. A content-script `fetch` is subject to
+   * CORS and gets blocked (TypeError "NetworkError"). The background script
+   * holds host permission for *.autodarts.direct, so its fetch is CORS-exempt —
+   * we delegate to it whenever the target origin differs from the page origin.
+   * Same-origin requests (locally-served board, or the relay opened directly)
+   * are fetched straight from the content script.
+   *
+   * Returns a Response-like object exposing { ok, status, json(), text() }.
+   */
+  async function boardFetch(url, init) {
+    const crossOrigin = new URL(url, location.href).origin !== location.origin;
+    if (!crossOrigin || !(ext && ext.runtime && ext.runtime.sendMessage)) {
+      return fetch(url, init);
+    }
+    const resp = await ext.runtime.sendMessage({ type: 'adcs-api', url, init });
+    if (!resp) throw new TypeError('NetworkError: no response from background');
+    if (resp.error) throw new TypeError(resp.error);
+    return {
+      ok: resp.ok,
+      status: resp.status,
+      json: async () => JSON.parse(resp.body),
+      text: async () => resp.body,
+    };
+  }
+
   async function fetchControls(camIndex) {
-    const res = await fetch(`${boardBase()}/api/cams/controls/${camIndex}`);
+    const base = resolveApiBase();
+    const res = await boardFetch(`${base}/api/cams/controls/${camIndex}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   }
 
   async function patchControl(camIndex, key, value) {
-    const res = await fetch(`${boardBase()}/api/cams/controls/${camIndex}`, {
+    const base = resolveApiBase();
+    const res = await boardFetch(`${base}/api/cams/controls/${camIndex}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [key]: value }),
@@ -51,7 +116,8 @@
   }
 
   async function resetControls(camIndex) {
-    const res = await fetch(`${boardBase()}/api/cams/controls/${camIndex}/reset`, {
+    const base = resolveApiBase();
+    const res = await boardFetch(`${base}/api/cams/controls/${camIndex}/reset`, {
       method: 'POST',
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -436,9 +502,17 @@
 
   let _lastPath = location.pathname;
 
-  /** Called whenever the URL is (or becomes) /config, or when we leave it. */
+  /** True on the board config page — both the directly-served board
+   * (`/config`) and the embedded client on play.autodarts.io
+   * (`/boards/<id>/config`). */
+  function isConfigPage() {
+    return location.pathname === '/config'
+      || /^\/boards\/[0-9a-fA-F-]+\/config$/.test(location.pathname);
+  }
+
+  /** Called whenever the URL is (or becomes) the config page, or when we leave it. */
   function onUrlChange() {
-    if (location.pathname === '/config') {
+    if (isConfigPage()) {
       injectMDI();
       injectOnCamImages();
     } else {
@@ -447,7 +521,7 @@
   }
 
   // Single persistent MutationObserver — catches React's async rendering of
-  // camera images after every SPA navigation to /config.
+  // camera images after every SPA navigation to the config page.
   // We also observe `src` attribute changes: React often inserts <img> elements
   // first and sets their src asynchronously, so childList alone isn't enough.
   let _injectTimer = null;
@@ -457,7 +531,7 @@
   }
 
   const _observer = new MutationObserver(() => {
-    if (location.pathname === '/config') {
+    if (isConfigPage()) {
       scheduleInject();
     }
   });
