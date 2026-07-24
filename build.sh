@@ -105,8 +105,9 @@ build_target() {
 
   # Copy extension files
   cp "$MANIFEST_SRC" "$OUT/manifest.json"
-  cp "$SRC/content.js"  "$OUT/content.js"
-  cp "$SRC/content.css" "$OUT/content.css"
+  cp "$SRC/content.js"    "$OUT/content.js"
+  cp "$SRC/content.css"   "$OUT/content.css"
+  cp "$SRC/background.js"  "$OUT/background.js"
 
   # Copy icons
   for SIZE in 16 48 128; do
