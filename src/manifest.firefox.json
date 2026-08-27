@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Autodarts Camera Settings",
   "description": "Adds V4L2 camera control sliders to the Autodarts board config page.",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "permissions": [
     "*://*.autodarts.direct/*"
   ],

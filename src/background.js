@@ -3,7 +3,8 @@
  *
  * Performs board API requests on behalf of the content script.
  *
- * Why this exists: on play.autodarts.io the board is reached through its
+ * Why this exists: on the cloud client (play.autodarts.com, or its legacy
+ * domain play.autodarts.io) the board is reached through its
  * per-board relay host (…autodarts.direct), and that host's /api/cams/*
  * responses do NOT include an Access-Control-Allow-Origin header. A fetch made
  * from the content script runs in the page's origin and is therefore blocked by

@@ -9,7 +9,8 @@
  *
  * API used (see resolveApiBase for how the base URL is derived — directly on a
  * locally-served board, or via the per-board autodarts.direct relay host when
- * running inside the play.autodarts.io embedded client):
+ * running inside the embedded cloud client on play.autodarts.com — or its
+ * legacy domain play.autodarts.io):
  *   GET  /api/cams/controls/{cam}        – fetch controls
  *   PATCH /api/cams/controls/{cam}       – update a single control value
  *   POST  /api/cams/controls/{cam}/reset – reset all controls to device defaults
@@ -40,7 +41,8 @@
    *
    * • Direct connection (http://<ip>:3180/config, or the board's relay host
    *   directly): the API is on the current page origin.
-   * • Embedded client on play.autodarts.io (…/boards/<id>/config): the page
+   * • Embedded cloud client (play.autodarts.com or the legacy
+   *   play.autodarts.io, at …/boards/<id>/config): the page
    *   origin is the cloud host, which does NOT serve the camera API (→ 404). The
    *   board is reached through its per-board relay host
    *   `https://<ip-with-dashes>.<board-id>.autodarts.direct:<tlsPort>`.
@@ -71,7 +73,8 @@
    * Fetch a board API URL, transparently routing cross-origin requests through
    * the background script.
    *
-   * On play.autodarts.io the board is reached via its relay host
+   * On the cloud client (play.autodarts.com / play.autodarts.io) the board is
+   * reached via its relay host
    * (…autodarts.direct), whose /api/cams/* responses have NO
    * Access-Control-Allow-Origin header. A content-script `fetch` is subject to
    * CORS and gets blocked (TypeError "NetworkError"). The background script
@@ -503,8 +506,9 @@
   let _lastPath = location.pathname;
 
   /** True on the board config page — both the directly-served board
-   * (`/config`) and the embedded client on play.autodarts.io
-   * (`/boards/<id>/config`). */
+   * (`/config`) and the embedded cloud client on play.autodarts.com or
+   * play.autodarts.io (`/boards/<id>/config`). The host is irrelevant — only
+   * the path is matched — so both cloud domains are supported. */
   function isConfigPage() {
     return location.pathname === '/config'
       || /^\/boards\/[0-9a-fA-F-]+\/config$/.test(location.pathname);
