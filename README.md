@@ -138,6 +138,19 @@ The extension talks to the Autodarts board's local REST API — The three endpoi
 | `PATCH` | `/api/cams/controls/{cam}` | Update one or more control values |
 | `POST` | `/api/cams/controls/{cam}/reset` | Reset all controls to device defaults |
 
+Unknown paths on the board answer with the web UI (HTTP 200 + HTML) rather than
+a 404, so a real 404 from these endpoints comes from the board itself.
+
+### Requires a Linux board
+
+These are V4L2 controls, and V4L2 exists only on Linux. A board running on
+macOS serves the same API and streams video normally, but has no V4L2 layer, so
+`/api/cams/controls/{cam}` returns 404 for every camera and this extension has
+nothing to show. Tell the two apart with `/api/devices`: a Linux board reports
+`formats[].path` as `/dev/videoN`, a macOS board reports a bare index (`"0"`)
+with an AVFoundation bus id (`0x11200000c451915`). The panel detects this and
+says so instead of surfacing the 404.
+
 ---
 
 ## License

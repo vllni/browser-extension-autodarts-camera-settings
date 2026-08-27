@@ -33,6 +33,13 @@
 
   /* ─── Utility ─────────────────────────────────────────────────────── */
 
+  /** True on the embedded cloud client's board route (`/boards/<id>/config` on
+   * play.autodarts.com or the legacy play.autodarts.io). Path-only, so it holds
+   * for either cloud domain. */
+  function isCloudConfigPath() {
+    return /^\/boards\/[0-9a-fA-F-]+\/config$/.test(location.pathname);
+  }
+
   /**
    * Resolve the base URL of the board's REST API.
    *
@@ -51,19 +58,47 @@
    * board (its src is `<base>/api/streams/cams/<n>`), so we derive the base from
    * the image's origin. Images load without a CORS check, so this works even on
    * the cloud client — unlike a `fetch` to the discovery service, which a
-   * content script can't reliably make cross-origin. Falls back to the page
-   * origin when no stream image is present.
+   * content script can't reliably make cross-origin.
+   *
+   * Returns null when no board API host can be determined. That happens on the
+   * cloud client when it has no working connection to the board: it then builds
+   * the stream path against its OWN origin (`play.autodarts.com/api/streams/…`)
+   * instead of the relay host. The cloud origin does not serve /api/cams/*, so
+   * treating it as the API base produces a bare, misleading `HTTP 404`.
    */
   function resolveApiBase() {
     const img = document.querySelector('img[src*="/api/streams/cams/"]');
     if (img && img.src) {
       try {
-        return new URL(img.src, location.href).origin;
+        const { origin } = new URL(img.src, location.href);
+        // Board-served or relay-served stream → that origin is the API host.
+        // Cloud-origin stream on the cloud route → the board is unreachable.
+        if (origin !== location.origin || !isCloudConfigPath()) return origin;
+        return null;
       } catch {
-        /* fall through to page origin */
+        /* fall through */
       }
     }
-    return `${location.protocol}//${location.host}`;
+    // Without a stream image: a directly-served board is its own API host; the
+    // cloud client never is.
+    return isCloudConfigPath() ? null : `${location.protocol}//${location.host}`;
+  }
+
+  /**
+   * resolveApiBase(), but throws an explanatory error instead of returning null
+   * so the panel reports why nothing can be loaded rather than "HTTP 404".
+   */
+  function requireApiBase() {
+    const base = resolveApiBase();
+    if (base === null) {
+      throw new Error(
+        'board not reachable. The Autodarts client is serving the camera stream '
+        + 'from its own origin instead of the board\'s autodarts.direct relay, '
+        + 'so there is no board API to query. Check that the board is online and '
+        + 'reachable from this browser.',
+      );
+    }
+    return base;
   }
 
   const ext = (typeof browser !== 'undefined') ? browser
@@ -101,29 +136,86 @@
     };
   }
 
+  /**
+   * Build the error for a non-OK board API response.
+   *
+   * Always names the exact URL: a bare "HTTP 404" cannot be told apart from the
+   * three very different causes it has in the wild — wrong host (cloud origin
+   * instead of the board), a cam index the board doesn't have, or board software
+   * without the camera-controls API. The URL in the message settles it, so a
+   * screenshot from a reporter is enough to diagnose.
+   */
+  function apiError(status, url) {
+    if (status === 404) {
+      return new Error(
+        `HTTP 404 — the board reported no controls for ${url}. Unknown paths on `
+        + 'this board answer with the web UI, not a 404, so this is the board '
+        + 'itself finding no controls for that camera. Check the host and cam '
+        + 'index in that URL.',
+      );
+    }
+    return new Error(`HTTP ${status} — ${url}`);
+  }
+
+  /**
+   * Whether the board's cameras are V4L2 devices.
+   *
+   * V4L2 is Linux-only. A board running on macOS serves the same API and its
+   * streams work fine, but there are no V4L2 controls behind
+   * /api/cams/controls/<n>, so it answers 404 for every camera. Distinguish the
+   * two from /api/devices: Linux boards report `formats[].path` as /dev/videoN,
+   * while a macOS board reports a bare device index ("0") alongside an
+   * AVFoundation-style bus id ("0x11200000c451915").
+   *
+   * Returns true/false, or null when it cannot be determined — callers must not
+   * turn an inconclusive probe into a claim about the platform.
+   */
+  async function hasV4L2Cameras(base) {
+    try {
+      const res = await boardFetch(`${base}/api/devices`);
+      if (!res.ok) return null;
+      const devices = await res.json();
+      if (!Array.isArray(devices) || devices.length === 0) return null;
+      return devices.some((d) => Array.isArray(d.formats) && d.formats.some(
+        (f) => typeof f.path === 'string' && f.path.startsWith('/dev/video'),
+      ));
+    } catch {
+      return null;
+    }
+  }
+
   async function fetchControls(camIndex) {
-    const base = resolveApiBase();
-    const res = await boardFetch(`${base}/api/cams/controls/${camIndex}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const base = requireApiBase();
+    const url = `${base}/api/cams/controls/${camIndex}`;
+    const res = await boardFetch(url);
+    if (res.status === 404 && (await hasV4L2Cameras(base)) === false) {
+      throw new Error(
+        'Your board is not running on Linux, so it does not give access to the '
+        + 'camera settings — this will not work here. It only works when the '
+        + 'board software runs on Linux, for example on a Raspberry Pi. '
+        + 'Everything else on your board keeps working normally.',
+      );
+    }
+    if (!res.ok) throw apiError(res.status, url);
     return res.json();
   }
 
   async function patchControl(camIndex, key, value) {
-    const base = resolveApiBase();
-    const res = await boardFetch(`${base}/api/cams/controls/${camIndex}`, {
+    const base = requireApiBase();
+    const url = `${base}/api/cams/controls/${camIndex}`;
+    const res = await boardFetch(url, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [key]: value }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw apiError(res.status, url);
   }
 
   async function resetControls(camIndex) {
-    const base = resolveApiBase();
-    const res = await boardFetch(`${base}/api/cams/controls/${camIndex}/reset`, {
-      method: 'POST',
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const base = requireApiBase();
+    const url = `${base}/api/cams/controls/${camIndex}/reset`;
+    const res = await boardFetch(url, { method: 'POST' });
+    if (!res.ok) throw apiError(res.status, url);
   }
 
   /* ─── Panel rendering ─────────────────────────────────────────────── */
@@ -510,8 +602,7 @@
    * play.autodarts.io (`/boards/<id>/config`). The host is irrelevant — only
    * the path is matched — so both cloud domains are supported. */
   function isConfigPage() {
-    return location.pathname === '/config'
-      || /^\/boards\/[0-9a-fA-F-]+\/config$/.test(location.pathname);
+    return location.pathname === '/config' || isCloudConfigPath();
   }
 
   /** Called whenever the URL is (or becomes) the config page, or when we leave it. */
