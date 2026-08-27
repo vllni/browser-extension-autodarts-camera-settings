@@ -29,6 +29,10 @@ Iteratively tunes V4L2 camera controls on a live Autodarts board until all dartb
 | `PATCH` | `/api/cams/controls/{cam}` | Set one or more controls: `{ "brightness": -10 }` |
 | `POST` | `/api/cams/controls/{cam}/reset` | Reset camera to device defaults |
 
+These are V4L2 controls, so they exist only on a Linux board. A macOS board
+returns 404 for every camera here while its streams work; check `/api/devices`
+for `/dev/videoN` paths to tell the two apart.
+
 ### Control Types
 
 | `type` | Render | Notes |

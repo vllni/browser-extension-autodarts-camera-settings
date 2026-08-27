@@ -83,6 +83,73 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
+/** /api/devices as a Linux board reports it (V4L2 device paths). */
+const LINUX_DEVICES = [{
+  card: 'USB HD Camera: USB HD Camera',
+  bus: 'usb-0000:01:00.0-1.2',
+  formats: [{ path: '/dev/video0', name: 'MJPG', resolutions: [] }],
+}];
+
+/** /api/devices as a macOS board reports it: bare index, AVFoundation bus id. */
+const MACOS_DEVICES = [{
+  card: 'Autodarts DIY Cam',
+  bus: '0x11200000c451915',
+  formats: [{ path: '0', name: 'NV12', resolutions: [] }],
+}];
+
+/** Board that 404s every camera-controls request, with the given /api/devices. */
+function mockFetch404WithDevices(devices) {
+  global.fetch = jest.fn((url) => {
+    if (String(url).includes('/api/devices')) {
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(devices) });
+    }
+    return Promise.resolve({ ok: false, status: 404 });
+  });
+}
+
+// ─── Board without V4L2 (macOS) ────────────────────────────────────────────
+
+describe('board whose cameras are not V4L2 devices', () => {
+  test('explains the platform instead of showing HTTP 404', async () => {
+    setupDOM();
+    mockFetch404WithDevices(MACOS_DEVICES);
+    require('../src/content.js');
+    clickCard();
+    await tick();
+
+    const err = document.querySelector('.adcs-error');
+    expect(err).not.toBeNull();
+    expect(err.textContent).toMatch(/not running on Linux/i);
+    expect(err.textContent).not.toMatch(/HTTP 404/);
+  });
+
+  test('a Linux board that 404s still reports the URL, not the platform', async () => {
+    setupDOM();
+    mockFetch404WithDevices(LINUX_DEVICES);
+    require('../src/content.js');
+    clickCard();
+    await tick();
+
+    const err = document.querySelector('.adcs-error');
+    expect(err.textContent).toContain('/api/cams/controls/0');
+    expect(err.textContent).not.toMatch(/not running on Linux/i);
+  });
+
+  test('an unreadable /api/devices does not claim a platform', async () => {
+    setupDOM();
+    global.fetch = jest.fn((url) => (String(url).includes('/api/devices')
+      ? Promise.resolve({ ok: false, status: 500 })
+      : Promise.resolve({ ok: false, status: 404 })));
+    require('../src/content.js');
+    clickCard();
+    await tick();
+
+    const err = document.querySelector('.adcs-error');
+    expect(err.textContent).toContain('/api/cams/controls/0');
+    expect(err.textContent).not.toMatch(/Linux/i);
+  });
+});
+
 // ─── Badge / card injection ────────────────────────────────────────────────
 
 describe('badge injection', () => {

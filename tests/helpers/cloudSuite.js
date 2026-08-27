@@ -57,6 +57,24 @@ function clickCard(index = 0) {
 const tick = (ms = 50) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * DOM as the cloud client renders it when it has NO working connection to the
+ * board: the stream path is built against the client's own origin instead of the
+ * board's relay host. Reported in the wild as a bare `HTTP 404` when opening the
+ * camera settings, because the cloud origin does not serve /api/cams/*.
+ */
+function setupUnreachableBoardDOM() {
+  document.body.innerHTML = `
+    <div class="outer-card">
+      <div class="image-zone">
+        <div class="img-wrapper">
+          <img src="/api/streams/cams/0">
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
  * Register the cloud-client tests for the host currently served by jsdom.
  * @param {string} cloudHost the expected page host, e.g. 'play.autodarts.com'
  */
@@ -117,6 +135,42 @@ function runCloudSuite(cloudHost) {
         .toBe(Object.keys(MOCK_CONTROLS).length);
     });
 
+    describe('when the board answers 404', () => {
+      test('names the failing URL and the likely cause', async () => {
+        setupDOM();
+        global.fetch = jest.fn(() => Promise.resolve({ ok: false, status: 404 }));
+        require('../../src/content.js');
+        clickCard();
+        await tick();
+
+        const err = document.querySelector('.adcs-error');
+        expect(err).not.toBeNull();
+        // The URL is what distinguishes "wrong host" from "board lacks the API".
+        expect(err.textContent).toContain(`${RELAY_BASE}/api/cams/controls/0`);
+        expect(err.textContent).toMatch(/reported no controls/i);
+      });
+    });
+
+    describe('when the client has no connection to the board', () => {
+      test('does not query the cloud origin for controls, and says why', async () => {
+        setupUnreachableBoardDOM();
+        require('../../src/content.js');
+        clickCard();
+        await tick();
+
+        // A request to the cloud origin can only ever 404 — never send it.
+        const cloudCall = global.fetch.mock.calls
+          .find(([url]) => typeof url === 'string' && url.includes('/api/cams/controls/'));
+        expect(cloudCall).toBeUndefined();
+
+        // The panel explains the cause instead of surfacing "HTTP 404".
+        const err = document.querySelector('.adcs-error');
+        expect(err).not.toBeNull();
+        expect(err.textContent).toMatch(/board not reachable/i);
+        expect(err.textContent).not.toMatch(/HTTP 404/);
+      });
+    });
+
     describe('with an extension runtime available (background delegation)', () => {
       afterEach(() => { delete global.browser; });
 
@@ -148,4 +202,4 @@ function runCloudSuite(cloudHost) {
   });
 }
 
-module.exports = { runCloudSuite, BOARD_ID, RELAY_BASE, MOCK_CONTROLS };
+module.exports = { runCloudSuite, setupUnreachableBoardDOM, BOARD_ID, RELAY_BASE, MOCK_CONTROLS };

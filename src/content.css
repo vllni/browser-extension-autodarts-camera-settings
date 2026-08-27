@@ -401,11 +401,16 @@
 
 .adcs-error {
   display: flex;
-  align-items: center;
+  /* Messages name the failing URL and wrap to several lines, so the icon pins
+     to the first line instead of centring against the whole block. */
+  align-items: flex-start;
   gap: 8px;
   padding: 16px 0;
   color: rgb(252, 129, 129);
   font-size: 13px;
+  line-height: 1.45;
+  /* A relay host is long and unbreakable; keep it inside the fixed-width panel. */
+  overflow-wrap: anywhere;
 }
 
 .adcs-error .mdi {
