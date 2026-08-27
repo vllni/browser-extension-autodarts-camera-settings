@@ -1,6 +1,6 @@
 # Autodarts Camera Settings
 
-A browser extension that adds V4L2 camera control panels to the [Autodarts](https://autodarts.io) board's `/config` page. Click any camera stream image to open a floating panel with sliders, toggles, and selects for every V4L2 control exposed by the board.
+A browser extension that adds V4L2 camera control panels to the [Autodarts](https://autodarts.com) board's `/config` page. Click any camera stream image to open a floating panel with sliders, toggles, and selects for every V4L2 control exposed by the board.
 
 Supports **Chrome / Chromium** (Manifest V3) and **Firefox / Waterfox** (Manifest V2).
 
@@ -63,7 +63,10 @@ Supports **Chrome / Chromium** (Manifest V3) and **Firefox / Waterfox** (Manifes
 
 ## Usage
 
-1. Open your Autodarts board's config page at `http://<board-ip>:<port>/config`
+1. Open your Autodarts board's config page — either directly at
+   `http://<board-ip>:<port>/config`, or through the cloud client at
+   `https://play.autodarts.com/boards/<board-id>/config` (the legacy
+   `play.autodarts.io` domain still works until it is shut down)
 2. Hover over any camera stream image — a settings badge (⚙) appears in the top-right corner
 3. Click the image to open the V4L2 control panel for that camera
 4. Adjust controls — changes are sent to the board immediately
